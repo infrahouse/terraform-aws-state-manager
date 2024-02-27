@@ -11,16 +11,19 @@ resource "aws_iam_role" "state-manager" {
   name               = var.name
   description        = "Role to manage a terraform state of a repo"
   assume_role_policy = data.aws_iam_policy_document.assume.json
+  tags               = local.tags
 }
 
 resource "aws_iam_policy" "permissions_ro" {
   name_prefix = "${var.name}-ro"
   policy      = data.aws_iam_policy_document.permissions_ro.json
+  tags        = local.tags
 }
 
 resource "aws_iam_policy" "permissions_rw" {
   name_prefix = "${var.name}-rw"
   policy      = data.aws_iam_policy_document.permissions_rw.json
+  tags        = local.tags
 }
 
 resource "aws_iam_role_policy_attachment" "state-manager-ro" {
