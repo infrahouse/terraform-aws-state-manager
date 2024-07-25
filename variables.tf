@@ -3,6 +3,12 @@ variable "assuming_role_arns" {
   type        = list(string)
 }
 
+variable "max_session_duration" {
+  description = "Maximum session duration (in seconds) that you want to set for the specified role."
+  type        = number
+  default     = 12 * 3600
+}
+
 variable "name" {
   description = "Role name"
 }
