@@ -8,10 +8,11 @@ locals {
 
 # IAM role
 resource "aws_iam_role" "state-manager" {
-  name               = var.name
-  description        = "Role to manage a terraform state of a repo"
-  assume_role_policy = data.aws_iam_policy_document.assume.json
-  tags               = local.tags
+  name                 = var.name
+  description          = "Role to manage a terraform state of a repo"
+  assume_role_policy   = data.aws_iam_policy_document.assume.json
+  max_session_duration = var.max_session_duration
+  tags                 = local.tags
 }
 
 resource "aws_iam_policy" "permissions_ro" {
