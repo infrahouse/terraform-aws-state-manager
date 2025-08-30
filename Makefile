@@ -17,6 +17,9 @@ for line in sys.stdin:
 endef
 export PRINT_HELP_PYSCRIPT
 
+TEST_REGION="us-west-2"
+TEST_ROLE="arn:aws:iam::303467602807:role/state-manager-tester"
+
 help: install-hooks
 	@python -c "$$PRINT_HELP_PYSCRIPT" < Makefile
 
@@ -40,6 +43,21 @@ lint:  ## Run code style checks
 test:  ## Run tests on the module
 	pytest -xvvs tests
 
+.PHONY: test-keep
+test-keep: ## Run a test and keep resources
+	pytest -xvvs \
+		--aws-region=${TEST_REGION} \
+		--test-role-arn=${TEST_ROLE} \
+		--keep-after \
+		tests/test_module.py
+
+.PHONY: test-clean
+test-clean: ## Run a test and destroy resources
+	pytest -xvvs \
+		--aws-region=${TEST_REGION} \
+		--test-role-arn=${TEST_ROLE} \
+		tests/test_module.py
+
 .PHONY: bootstrap
 bootstrap: ## bootstrap the development environment
 	pip install -U "pip ~= 23.1"
@@ -56,10 +74,12 @@ docs: ## generate Sphinx HTML documentation, including API docs
 
 .PHONY: clean
 clean:  ## Remove various artifacts
-	rm -rf test_data/gha-admin/.terraform \
-		test_data/gha-admin/.terraform.lock.hcl \
-		test_data/gha-admin/terraform.tfstate \
-		test_data/gha-admin/terraform.tfstate.backup \
+	rm -rf test_data/state-manager/.terraform \
+		test_data/state-manager/.terraform.lock.hcl \
+		test_data/state-manager/terraform.tfstate \
+		test_data/state-manager/terraform.tfstate.backup \
+		test_data/state-manager/terraform.tfvars \
+		test_data/state-manager/terraform.tf \
 		.pytest_cache \
 		tf-apply-trace.txt \
 		tf-destroy-trace.txt

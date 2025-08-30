@@ -1,10 +1,15 @@
+variable "region" {}
+variable "role_arn" {
+  default = null
+}
+
 variable "assuming_role_arns" {
-  description = "Roles that are allowed to assume this role. For example, a GitHub Actions worker has a role. The GHA role needs to be able to assume the state-manager role."
+  description = "Roles that are allowed to assume this role"
   type        = list(string)
 }
 
 variable "max_session_duration" {
-  description = "Maximum session duration (in seconds) that you want to set for the specified role."
+  description = "Maximum session duration (in seconds)"
   type        = number
   default     = 12 * 3600
 }
@@ -13,8 +18,9 @@ variable "name" {
   description = "Role name"
   type        = string
 }
+
 variable "read_only_permissions" {
-  description = "Whether the role should have read-only permissions on the state bucket. It's needed for roles that access the state via terraform_remote_state data source."
+  description = "Whether the role should have read-only permissions"
   type        = bool
   default     = false
 }
@@ -31,6 +37,6 @@ variable "state_key" {
 }
 
 variable "terraform_locks_table_arn" {
-  description = "DynamoDB table that holds Terraform state locks."
+  description = "DynamoDB table that holds Terraform state locks"
   type        = string
 }
