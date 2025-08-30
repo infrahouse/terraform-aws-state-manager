@@ -14,7 +14,7 @@ concurrency:
 jobs:
   terraform:
     name: 'Terraform Test'
-    runs-on: ["self-hosted", "Linux"]
+    runs-on: ["self-hosted", "Linux", "noble"]
     timeout-minutes: 120
     env:
       GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
