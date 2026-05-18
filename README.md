@@ -1,7 +1,19 @@
 # Terraform AWS State Manager
 
+[![Need Help?](https://img.shields.io/badge/Need%20Help%3F-Contact%20Us-0066CC)](https://infrahouse.com/contact)
+[![Docs](https://img.shields.io/badge/docs-github.io-blue)](https://infrahouse.github.io/terraform-aws-state-manager/)
+[![Registry](https://img.shields.io/badge/Terraform-Registry-purple?logo=terraform)](https://registry.terraform.io/modules/infrahouse/state-manager/aws/latest)
+[![Release](https://img.shields.io/github/release/infrahouse/terraform-aws-state-manager.svg)](https://github.com/infrahouse/terraform-aws-state-manager/releases/latest)
+[![AWS IAM](https://img.shields.io/badge/AWS-IAM-orange?logo=amazoniam)](https://aws.amazon.com/iam/)
+[![AWS S3](https://img.shields.io/badge/AWS-S3-orange?logo=amazons3)](https://aws.amazon.com/s3/)
+[![AWS DynamoDB](https://img.shields.io/badge/AWS-DynamoDB-orange?logo=amazondynamodb)](https://aws.amazon.com/dynamodb/)
+[![Security](https://img.shields.io/github/actions/workflow/status/infrahouse/terraform-aws-state-manager/vuln-scanner-pr.yml?label=Security)](https://github.com/infrahouse/terraform-aws-state-manager/actions/workflows/vuln-scanner-pr.yml)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+
 This Terraform module creates an IAM role designed to manage Terraform state files stored in S3 with DynamoDB locking.
 The role provides secure, controlled access to state resources while supporting both read-only and read-write permissions.
+
+![Architecture](docs/assets/architecture.svg)
 
 ## Features
 
@@ -69,6 +81,8 @@ module "state_reader" {
   ]
 }
 ```
+<!-- BEGIN_TF_DOCS -->
+
 ## Requirements
 
 | Name | Version |
@@ -102,10 +116,11 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_assuming_role_arns"></a> [assuming\_role\_arns](#input\_assuming\_role\_arns) | Roles that are allowed to assume this role. For example, a GitHub Actions worker has a role. The GHA role needs to be able to assume the state-manager role. | `list(string)` | n/a | yes |
+| <a name="input_assuming_role_arns"></a> [assuming\_role\_arns](#input\_assuming\_role\_arns) | Roles that are allowed to assume this role. For example, a GitHub Actions<br/>worker has a role. The GHA role needs to be able to assume the state-manager role. | `list(string)` | n/a | yes |
+| <a name="input_environment"></a> [environment](#input\_environment) | Environment name (e.g., development, staging, production). | `string` | n/a | yes |
 | <a name="input_max_session_duration"></a> [max\_session\_duration](#input\_max\_session\_duration) | Maximum session duration (in seconds) that you want to set for the specified role. | `number` | `43200` | no |
 | <a name="input_name"></a> [name](#input\_name) | Role name | `string` | n/a | yes |
-| <a name="input_read_only_permissions"></a> [read\_only\_permissions](#input\_read\_only\_permissions) | Whether the role should have read-only permissions on the state bucket. It's needed for roles that access the state via terraform\_remote\_state data source. | `bool` | `false` | no |
+| <a name="input_read_only_permissions"></a> [read\_only\_permissions](#input\_read\_only\_permissions) | Whether the role should have read-only permissions on the state bucket.<br/>It's needed for roles that access the state via terraform\_remote\_state data source. | `bool` | `false` | no |
 | <a name="input_state_bucket"></a> [state\_bucket](#input\_state\_bucket) | Name of the S3 bucket with the state | `string` | n/a | yes |
 | <a name="input_state_key"></a> [state\_key](#input\_state\_key) | Path to the state file in the state bucket | `string` | `"terraform.tfstate"` | no |
 | <a name="input_terraform_locks_table_arn"></a> [terraform\_locks\_table\_arn](#input\_terraform\_locks\_table\_arn) | DynamoDB table that holds Terraform state locks. | `string` | n/a | yes |
@@ -116,3 +131,4 @@ No modules.
 |------|-------------|
 | <a name="output_state_manager_role_arn"></a> [state\_manager\_role\_arn](#output\_state\_manager\_role\_arn) | ARN of the created state manager role. |
 | <a name="output_state_manager_role_name"></a> [state\_manager\_role\_name](#output\_state\_manager\_role\_name) | Name of the created state manager role. |
+<!-- END_TF_DOCS -->
