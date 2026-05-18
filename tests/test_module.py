@@ -129,8 +129,12 @@ def _get_state_manager_session(
     )
 
 
-def _verify_rw_permissions(s3, dynamodb, bucket_name: str, table_name: str) -> None:
+def _check_rw_permissions(s3, dynamodb, bucket_name: str, table_name: str) -> None:
     """Exercise all RW operations on S3 and DynamoDB."""
+    response = s3.list_objects_v2(Bucket=bucket_name)
+    assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+    LOG.info("ListBucket on %s: OK", bucket_name)
+
     s3.put_object(Bucket=bucket_name, Key="terraform.tfstate", Body=b"test-state-data")
     LOG.info("PutObject terraform.tfstate: OK")
 
@@ -157,6 +161,40 @@ def _verify_rw_permissions(s3, dynamodb, bucket_name: str, table_name: str) -> N
         TableName=table_name, Key={"LockID": {"S": "test-lock-id"}}
     )
     LOG.info("DeleteItem: OK")
+
+
+def _check_ro_permissions(
+    s3, dynamodb, boto3_session, aws_region, bucket_name: str, table_name: str
+) -> None:
+    """Verify RO role can read but not write."""
+    response = s3.list_objects_v2(Bucket=bucket_name)
+    assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+    LOG.info("ListBucket on %s: OK", bucket_name)
+
+    test_s3 = boto3_session.client("s3", region_name=aws_region)
+    test_s3.put_object(
+        Bucket=bucket_name, Key="terraform.tfstate", Body=b"ro-test-state"
+    )
+    LOG.info("Seeded terraform.tfstate via test session")
+
+    response = s3.get_object(Bucket=bucket_name, Key="terraform.tfstate")
+    assert response["Body"].read() == b"ro-test-state"
+    LOG.info("GetObject terraform.tfstate: OK (read-only role)")
+
+    with pytest.raises(ClientError) as exc_info:
+        s3.put_object(
+            Bucket=bucket_name, Key="terraform.tfstate", Body=b"should-fail"
+        )
+    assert exc_info.value.response["Error"]["Code"] == "AccessDenied"
+    LOG.info("PutObject correctly denied for read-only role")
+
+    with pytest.raises(ClientError) as exc_info:
+        dynamodb.describe_table(TableName=table_name)
+    assert exc_info.value.response["Error"]["Code"] == "AccessDeniedException"
+    LOG.info("DynamoDB correctly denied for read-only role")
+
+    test_s3.delete_object(Bucket=bucket_name, Key="terraform.tfstate")
+    LOG.info("Cleaned up seeded terraform.tfstate")
 
 
 def _verify_permissions(
@@ -189,61 +227,32 @@ def _verify_permissions(
     s3 = sm_session.client("s3", region_name=aws_region)
     dynamodb = sm_session.client("dynamodb", region_name=aws_region)
 
-    # S3 ListBucket - should always work
-    response = s3.list_objects_v2(Bucket=bucket_name)
-    assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
-    LOG.info("ListBucket on %s: OK", bucket_name)
-
-    if not read_only:
-        # Retry the entire RW verification block for IAM propagation.
-        # Individual actions may succeed while others still fail.
-        sleep_time = 2
-        with timeout(seconds=60):
-            while True:
-                try:
-                    _verify_rw_permissions(s3, dynamodb, bucket_name, table_name)
-                    break
-                except ClientError as exc:
-                    code = exc.response["Error"]["Code"]
-                    if code in ("AccessDenied", "AccessDeniedException"):
-                        LOG.info(
-                            "RW check failed (%s, IAM propagation), retrying in %ds",
-                            code,
-                            sleep_time,
-                        )
-                        sleep(sleep_time)
-                        sleep_time = min(sleep_time * 2, 10)
-                    else:
-                        raise
-    else:
-        # Seed a state file via the test session so we can verify RO can read it
-        test_s3 = boto3_session.client("s3", region_name=aws_region)
-        test_s3.put_object(
-            Bucket=bucket_name, Key="terraform.tfstate", Body=b"ro-test-state"
-        )
-        LOG.info("Seeded terraform.tfstate via test session")
-
-        # RO role must be able to read
-        response = s3.get_object(Bucket=bucket_name, Key="terraform.tfstate")
-        assert response["Body"].read() == b"ro-test-state"
-        LOG.info("GetObject terraform.tfstate: OK (read-only role)")
-
-        # RO role must NOT be able to write
-        with pytest.raises(ClientError) as exc_info:
-            s3.put_object(
-                Bucket=bucket_name, Key="terraform.tfstate", Body=b"should-fail"
-            )
-        assert exc_info.value.response["Error"]["Code"] == "AccessDenied"
-        LOG.info("PutObject correctly denied for read-only role")
-
-        with pytest.raises(ClientError) as exc_info:
-            dynamodb.describe_table(TableName=table_name)
-        assert exc_info.value.response["Error"]["Code"] == "AccessDeniedException"
-        LOG.info("DynamoDB correctly denied for read-only role")
-
-        # Clean up seeded object
-        test_s3.delete_object(Bucket=bucket_name, Key="terraform.tfstate")
-        LOG.info("Cleaned up seeded terraform.tfstate")
+    # Retry for IAM policy propagation — any action can fail until
+    # all policy attachments have propagated.
+    sleep_time = 2
+    with timeout(seconds=60):
+        while True:
+            try:
+                if not read_only:
+                    _check_rw_permissions(s3, dynamodb, bucket_name, table_name)
+                else:
+                    _check_ro_permissions(
+                        s3, dynamodb, boto3_session, aws_region,
+                        bucket_name, table_name,
+                    )
+                break
+            except ClientError as exc:
+                code = exc.response["Error"]["Code"]
+                if code in ("AccessDenied", "AccessDeniedException"):
+                    LOG.info(
+                        "Permission check failed (%s, IAM propagation), retrying in %ds",
+                        code,
+                        sleep_time,
+                    )
+                    sleep(sleep_time)
+                    sleep_time = min(sleep_time * 2, 10)
+                else:
+                    raise
 
 
 @pytest.mark.parametrize("aws_provider_version", ["~> 6.0"], ids=["aws-6"])
