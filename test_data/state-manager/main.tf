@@ -26,6 +26,7 @@ module "test" {
 
   environment               = var.environment
   assuming_role_arns        = var.assuming_role_arns
+  assuming_role_patterns    = var.assuming_role_patterns
   max_session_duration      = var.max_session_duration
   name                      = var.name
   read_only_permissions     = var.read_only_permissions

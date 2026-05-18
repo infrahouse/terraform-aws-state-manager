@@ -47,6 +47,24 @@ assuming_role_arns = [
 ]
 ```
 
+### `assuming_role_patterns`
+
+- **Type:** `list(string)`
+- **Default:** `[]`
+
+ARN patterns with wildcards for roles allowed to assume this role. Uses a `StringLike`
+condition on `aws:PrincipalArn` instead of exact matching. This is useful for AWS SSO
+roles, which have auto-generated suffixes that change when permission sets are recreated.
+
+```hcl
+assuming_role_patterns = [
+  "arn:aws:iam::123456789012:role/aws-reserved/sso.amazonaws.com/*/AWSReservedSSO_AdministratorAccess_*"
+]
+```
+
+Can be used alongside `assuming_role_arns` — exact ARNs are matched by the trust policy's
+principal list, while patterns are matched via a `StringLike` condition.
+
 ## Optional Variables
 
 ### `read_only_permissions`

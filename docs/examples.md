@@ -40,6 +40,30 @@ module "state_reader" {
 }
 ```
 
+## AWS SSO Access with Wildcard Patterns
+
+Allow SSO roles to manage state without hardcoding the full ARN. SSO role suffixes
+change when permission sets are recreated — wildcard patterns avoid breakage.
+
+```hcl
+module "state_manager" {
+  source  = "registry.infrahouse.com/infrahouse/state-manager/aws"
+  version = "1.4.2"
+
+  name                      = "my-terraform-state-manager"
+  state_bucket              = "my-terraform-state-bucket"
+  terraform_locks_table_arn = "arn:aws:dynamodb:us-west-2:123456789012:table/terraform-locks"
+
+  assuming_role_arns = [
+    "arn:aws:iam::123456789012:role/github-actions-role"
+  ]
+
+  assuming_role_patterns = [
+    "arn:aws:iam::123456789012:role/aws-reserved/sso.amazonaws.com/*/AWSReservedSSO_AdministratorAccess_*"
+  ]
+}
+```
+
 ## GitHub Actions Integration
 
 Create a state manager role alongside a GitHub Actions identity, with a custom

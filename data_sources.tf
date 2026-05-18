@@ -7,6 +7,23 @@ data "aws_iam_policy_document" "assume" {
       identifiers = var.assuming_role_arns
     }
   }
+
+  dynamic "statement" {
+    for_each = length(var.assuming_role_patterns) > 0 ? [1] : []
+    content {
+      sid     = "001"
+      actions = ["sts:AssumeRole"]
+      principals {
+        type        = "AWS"
+        identifiers = ["*"]
+      }
+      condition {
+        test     = "StringLike"
+        variable = "aws:PrincipalArn"
+        values   = var.assuming_role_patterns
+      }
+    }
+  }
 }
 
 data "aws_iam_policy_document" "permissions_ro" {

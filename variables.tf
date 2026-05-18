@@ -16,6 +16,17 @@ variable "assuming_role_arns" {
   }
 }
 
+variable "assuming_role_patterns" {
+  description = <<-EOT
+    ARN patterns (with wildcards) for roles allowed to assume this role.
+    Uses StringLike condition on aws:PrincipalArn instead of exact matching.
+    Useful for AWS SSO roles with auto-generated suffixes.
+    Example: ["arn:aws:iam::123456789012:role/aws-reserved/sso.amazonaws.com/*/AWSReservedSSO_AdministratorAccess_*"]
+  EOT
+  type        = list(string)
+  default     = []
+}
+
 variable "environment" {
   description = "Environment name (e.g., development, staging, production)."
   type        = string
