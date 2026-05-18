@@ -397,16 +397,25 @@ def test_module_wildcard(
     _write_provider_version(terraform_dir, aws_provider_version)
 
     probe_role_arn = probe_role["role_arn"]["value"]
-    # Derive a wildcard pattern from the probe role ARN
-    # e.g. arn:aws:iam::123456789012:role/pytest-probe-*
     probe_role_pattern = probe_role_arn.rsplit("-", 1)[0] + "-*"
+
+    sts = boto3_session.client("sts", region_name=aws_region)
+    caller_arn = sts.get_caller_identity()["Arn"]
+    # Convert assumed-role ARN to role ARN for the trust policy
+    if ":assumed-role/" in caller_arn:
+        parts = caller_arn.split(":")
+        account_id = parts[4]
+        role_name = parts[5].split("/")[1]
+        caller_role_arn = f"arn:aws:iam::{account_id}:role/{role_name}"
+    else:
+        caller_role_arn = caller_arn
 
     _write_tfvars(
         terraform_dir,
         aws_region,
         test_role_arn,
         "state-manager-wildcard",
-        assuming_role_arns=[test_role_arn],
+        assuming_role_arns=[caller_role_arn],
         assuming_role_patterns=[probe_role_pattern],
     )
 
