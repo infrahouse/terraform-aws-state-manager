@@ -223,6 +223,18 @@ def _verify_permissions(
         )
         LOG.info("DeleteItem: OK")
     else:
+        # Seed a state file via the test session so we can verify RO can read it
+        test_s3 = boto3_session.client("s3", region_name=aws_region)
+        test_s3.put_object(
+            Bucket=bucket_name, Key="terraform.tfstate", Body=b"ro-test-state"
+        )
+        LOG.info("Seeded terraform.tfstate via test session")
+
+        # RO role must be able to read
+        response = s3.get_object(Bucket=bucket_name, Key="terraform.tfstate")
+        assert response["Body"].read() == b"ro-test-state"
+        LOG.info("GetObject terraform.tfstate: OK (read-only role)")
+
         # RO role must NOT be able to write
         with pytest.raises(ClientError) as exc_info:
             s3.put_object(
@@ -235,6 +247,10 @@ def _verify_permissions(
             dynamodb.describe_table(TableName=table_name)
         assert exc_info.value.response["Error"]["Code"] == "AccessDeniedException"
         LOG.info("DynamoDB correctly denied for read-only role")
+
+        # Clean up seeded object
+        test_s3.delete_object(Bucket=bucket_name, Key="terraform.tfstate")
+        LOG.info("Cleaned up seeded terraform.tfstate")
 
 
 @pytest.mark.parametrize("aws_provider_version", ["~> 6.0"], ids=["aws-6"])
