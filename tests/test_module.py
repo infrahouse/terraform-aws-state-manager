@@ -67,6 +67,7 @@ def test_module(
             dedent(
                 f"""
                 assuming_role_arns = ["{assuming_role_arn}"]
+                environment = "development"
                 name = "{name}"
                 read_only_permissions = {str(read_only).lower()}
                 state_bucket = "test-state-bucket"
@@ -145,6 +146,7 @@ def test_module_defaults(
             dedent(
                 f"""
                 assuming_role_arns = ["{assuming_role_arn}"]
+                environment = "development"
                 name = "state-manager-defaults"
                 state_bucket = "test-state-bucket"
                 terraform_locks_table_arn = "arn:aws:dynamodb:{aws_region}:{account_id}:table/terraform-locks"
