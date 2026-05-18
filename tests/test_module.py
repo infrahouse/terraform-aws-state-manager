@@ -165,10 +165,27 @@ def _verify_permissions(
     LOG.info("ListBucket on %s: OK", bucket_name)
 
     if not read_only:
-        # S3 PutObject
-        s3.put_object(
-            Bucket=bucket_name, Key="terraform.tfstate", Body=b"test-state-data"
-        )
+        # S3 PutObject (retry for IAM policy propagation)
+        sleep_time = 2
+        with timeout(seconds=60):
+            while True:
+                try:
+                    s3.put_object(
+                        Bucket=bucket_name,
+                        Key="terraform.tfstate",
+                        Body=b"test-state-data",
+                    )
+                    break
+                except ClientError as exc:
+                    if exc.response["Error"]["Code"] == "AccessDenied":
+                        LOG.info(
+                            "PutObject denied (IAM propagation), retrying in %ds",
+                            sleep_time,
+                        )
+                        sleep(sleep_time)
+                        sleep_time *= 2
+                    else:
+                        raise
         LOG.info("PutObject terraform.tfstate: OK")
 
         # S3 GetObject
