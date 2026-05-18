@@ -129,6 +129,36 @@ def _get_state_manager_session(
     )
 
 
+def _verify_rw_permissions(s3, dynamodb, bucket_name: str, table_name: str) -> None:
+    """Exercise all RW operations on S3 and DynamoDB."""
+    s3.put_object(Bucket=bucket_name, Key="terraform.tfstate", Body=b"test-state-data")
+    LOG.info("PutObject terraform.tfstate: OK")
+
+    response = s3.get_object(Bucket=bucket_name, Key="terraform.tfstate")
+    assert response["Body"].read() == b"test-state-data"
+    LOG.info("GetObject terraform.tfstate: OK")
+
+    s3.delete_object(Bucket=bucket_name, Key="terraform.tfstate")
+    LOG.info("DeleteObject terraform.tfstate: OK")
+
+    dynamodb.describe_table(TableName=table_name)
+    LOG.info("DescribeTable %s: OK", table_name)
+
+    dynamodb.put_item(TableName=table_name, Item={"LockID": {"S": "test-lock-id"}})
+    LOG.info("PutItem: OK")
+
+    response = dynamodb.get_item(
+        TableName=table_name, Key={"LockID": {"S": "test-lock-id"}}
+    )
+    assert response["Item"]["LockID"]["S"] == "test-lock-id"
+    LOG.info("GetItem: OK")
+
+    dynamodb.delete_item(
+        TableName=table_name, Key={"LockID": {"S": "test-lock-id"}}
+    )
+    LOG.info("DeleteItem: OK")
+
+
 def _verify_permissions(
     boto3_session: boto3.Session,
     aws_region: str,
@@ -165,63 +195,26 @@ def _verify_permissions(
     LOG.info("ListBucket on %s: OK", bucket_name)
 
     if not read_only:
-        # S3 PutObject (retry for IAM policy propagation)
+        # Retry the entire RW verification block for IAM propagation.
+        # Individual actions may succeed while others still fail.
         sleep_time = 2
         with timeout(seconds=60):
             while True:
                 try:
-                    s3.put_object(
-                        Bucket=bucket_name,
-                        Key="terraform.tfstate",
-                        Body=b"test-state-data",
-                    )
+                    _verify_rw_permissions(s3, dynamodb, bucket_name, table_name)
                     break
                 except ClientError as exc:
-                    if exc.response["Error"]["Code"] == "AccessDenied":
+                    code = exc.response["Error"]["Code"]
+                    if code in ("AccessDenied", "AccessDeniedException"):
                         LOG.info(
-                            "PutObject denied (IAM propagation), retrying in %ds",
+                            "RW check failed (%s, IAM propagation), retrying in %ds",
+                            code,
                             sleep_time,
                         )
                         sleep(sleep_time)
-                        sleep_time *= 2
+                        sleep_time = min(sleep_time * 2, 10)
                     else:
                         raise
-        LOG.info("PutObject terraform.tfstate: OK")
-
-        # S3 GetObject
-        response = s3.get_object(Bucket=bucket_name, Key="terraform.tfstate")
-        assert response["Body"].read() == b"test-state-data"
-        LOG.info("GetObject terraform.tfstate: OK")
-
-        # S3 DeleteObject
-        s3.delete_object(Bucket=bucket_name, Key="terraform.tfstate")
-        LOG.info("DeleteObject terraform.tfstate: OK")
-
-        # DynamoDB DescribeTable
-        dynamodb.describe_table(TableName=table_name)
-        LOG.info("DescribeTable %s: OK", table_name)
-
-        # DynamoDB PutItem
-        dynamodb.put_item(
-            TableName=table_name,
-            Item={"LockID": {"S": "test-lock-id"}},
-        )
-        LOG.info("PutItem: OK")
-
-        # DynamoDB GetItem
-        response = dynamodb.get_item(
-            TableName=table_name,
-            Key={"LockID": {"S": "test-lock-id"}},
-        )
-        assert response["Item"]["LockID"]["S"] == "test-lock-id"
-        LOG.info("GetItem: OK")
-
-        # DynamoDB DeleteItem
-        dynamodb.delete_item(
-            TableName=table_name,
-            Key={"LockID": {"S": "test-lock-id"}},
-        )
-        LOG.info("DeleteItem: OK")
     else:
         # Seed a state file via the test session so we can verify RO can read it
         test_s3 = boto3_session.client("s3", region_name=aws_region)
