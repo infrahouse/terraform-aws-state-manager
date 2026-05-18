@@ -17,8 +17,9 @@ for line in sys.stdin:
 endef
 export PRINT_HELP_PYSCRIPT
 
-TEST_REGION="us-west-2"
-TEST_ROLE="arn:aws:iam::303467602807:role/state-manager-tester"
+TEST_REGION ?= us-west-2
+TEST_ROLE ?= arn:aws:iam::303467602807:role/state-manager-tester
+TEST_FILTER ?= test_module and rw and aws-6
 
 help: install-hooks
 	@python -c "$$PRINT_HELP_PYSCRIPT" < Makefile
@@ -49,6 +50,7 @@ test-keep: ## Run a test and keep resources
 		--aws-region=${TEST_REGION} \
 		--test-role-arn=${TEST_ROLE} \
 		--keep-after \
+		$(if ${TEST_FILTER},-k "${TEST_FILTER}") \
 		tests/test_module.py
 
 .PHONY: test-clean
@@ -56,6 +58,7 @@ test-clean: ## Run a test and destroy resources
 	pytest -xvvs \
 		--aws-region=${TEST_REGION} \
 		--test-role-arn=${TEST_ROLE} \
+		$(if ${TEST_FILTER},-k "${TEST_FILTER}") \
 		tests/test_module.py
 
 .PHONY: bootstrap
