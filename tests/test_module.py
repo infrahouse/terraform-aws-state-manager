@@ -49,6 +49,7 @@ def _write_tfvars(
     with open(f"{terraform_dir}/terraform.tfvars", "w") as fp:
         fp.write(dedent(f"""\
                 assuming_role_arns = [{arns_str}]
+                environment = "development"
                 name = "{name}"
                 read_only_permissions = {str(read_only).lower()}
                 region = "{aws_region}"
