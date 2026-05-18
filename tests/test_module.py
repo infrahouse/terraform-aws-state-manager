@@ -22,9 +22,7 @@ def _write_provider_version(terraform_dir: str, aws_provider_version: str) -> No
         pass
 
     with open(f"{terraform_dir}/terraform.tf", "w") as fp:
-        fp.write(
-            dedent(
-                f"""\
+        fp.write(dedent(f"""\
                 terraform {{
                     required_version = "~> 1.0"
                     required_providers {{
@@ -34,9 +32,7 @@ def _write_provider_version(terraform_dir: str, aws_provider_version: str) -> No
                         }}
                       }}
                     }}
-                """
-            )
-        )
+                """))
 
 
 def _write_tfvars(
@@ -51,16 +47,12 @@ def _write_tfvars(
     arns_str = ", ".join(f'"{a}"' for a in assuming_role_arns)
 
     with open(f"{terraform_dir}/terraform.tfvars", "w") as fp:
-        fp.write(
-            dedent(
-                f"""\
+        fp.write(dedent(f"""\
                 assuming_role_arns = [{arns_str}]
                 name = "{name}"
                 read_only_permissions = {str(read_only).lower()}
                 region = "{aws_region}"
-                """
-            )
-        )
+                """))
         if test_role_arn:
             fp.write(f'role_arn = "{test_role_arn}"\n')
 
