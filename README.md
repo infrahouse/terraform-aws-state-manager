@@ -81,6 +81,7 @@ module "state_reader" {
   ]
 }
 ```
+
 <!-- BEGIN_TF_DOCS -->
 
 ## Requirements

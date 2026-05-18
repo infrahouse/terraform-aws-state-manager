@@ -30,18 +30,8 @@ variable "read_only_permissions" {
   default     = false
 }
 
-variable "state_bucket" {
-  description = "Name of the S3 bucket with the state"
-  type        = string
-}
-
 variable "state_key" {
   description = "Path to the state file in the state bucket"
   type        = string
   default     = "terraform.tfstate"
-}
-
-variable "terraform_locks_table_arn" {
-  description = "DynamoDB table that holds Terraform state locks"
-  type        = string
 }
