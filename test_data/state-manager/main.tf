@@ -24,6 +24,7 @@ resource "aws_dynamodb_table" "locks" {
 module "test" {
   source = "../.."
 
+  environment               = var.environment
   assuming_role_arns        = var.assuming_role_arns
   max_session_duration      = var.max_session_duration
   name                      = var.name

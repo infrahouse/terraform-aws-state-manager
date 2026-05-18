@@ -3,6 +3,11 @@ variable "role_arn" {
   default = null
 }
 
+variable "environment" {
+  description = "Environment name"
+  type        = string
+}
+
 variable "assuming_role_arns" {
   description = "Roles that are allowed to assume this role"
   type        = list(string)
