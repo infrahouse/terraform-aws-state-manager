@@ -21,10 +21,18 @@ variable "assuming_role_patterns" {
     ARN patterns (with wildcards) for roles allowed to assume this role.
     Uses StringLike condition on aws:PrincipalArn instead of exact matching.
     Useful for AWS SSO roles with auto-generated suffixes.
+    Each pattern must include an explicit 12-digit AWS account ID.
     Example: ["arn:aws:iam::123456789012:role/aws-reserved/sso.amazonaws.com/*/AWSReservedSSO_AdministratorAccess_*"]
   EOT
   type        = list(string)
   default     = []
+
+  validation {
+    condition = alltrue([
+      for p in var.assuming_role_patterns : can(regex("^arn:aws:iam::[0-9]{12}:", p))
+    ])
+    error_message = "Each assuming_role_patterns entry must be a valid IAM ARN pattern starting with 'arn:aws:iam::' followed by a 12-digit account ID."
+  }
 }
 
 variable "environment" {
