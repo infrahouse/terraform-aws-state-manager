@@ -41,6 +41,7 @@ def _write_tfvars(
     test_role_arn: Optional[str],
     name: str,
     assuming_role_arns: List[str],
+    assuming_role_patterns: Optional[List[str]] = None,
     read_only: bool = False,
 ) -> None:
     """Write terraform.tfvars for a test run."""
@@ -54,6 +55,9 @@ def _write_tfvars(
                 read_only_permissions = {str(read_only).lower()}
                 region = "{aws_region}"
                 """))
+        if assuming_role_patterns is not None:
+            patterns_str = ", ".join(f'"{p}"' for p in assuming_role_patterns)
+            fp.write(f'assuming_role_patterns = [{patterns_str}]\n')
         if test_role_arn:
             fp.write(f'role_arn = "{test_role_arn}"\n')
 
@@ -230,7 +234,7 @@ def _verify_permissions(
     # Retry for IAM policy propagation — any action can fail until
     # all policy attachments have propagated.
     sleep_time = 2
-    with timeout(seconds=60):
+    with timeout(seconds=120):
         while True:
             try:
                 if not read_only:
@@ -365,6 +369,55 @@ def test_module_aws5_compat(
         test_role_arn,
         "state-manager-aws5-compat",
         assuming_role_arns=[probe_role_arn],
+    )
+
+    with terraform_apply(
+        terraform_dir, destroy_after=not keep_after, json_output=True
+    ) as tf_output:
+        LOG.info(json.dumps(tf_output, indent=4, default=str))
+
+        assert "state_manager_role_arn" in tf_output
+        assert tf_output["state_manager_role_arn"]["value"].startswith("arn:aws:iam::")
+
+        _verify_permissions(boto3_session, aws_region, probe_role, tf_output)
+
+
+@pytest.mark.parametrize("aws_provider_version", ["~> 6.0"], ids=["aws-6"])
+def test_module_wildcard(
+    aws_provider_version,
+    aws_region,
+    test_role_arn,
+    keep_after,
+    boto3_session,
+    probe_role,
+):
+    """Test assuming_role_patterns with wildcard principal matching."""
+    terraform_dir = f"{TERRAFORM_ROOT_DIR}/state-manager"
+
+    _write_provider_version(terraform_dir, aws_provider_version)
+
+    probe_role_arn = probe_role["role_arn"]["value"]
+    probe_role_pattern = probe_role_arn.rsplit("-", 1)[0] + "-*"
+
+    sts = boto3_session.client("sts", region_name=aws_region)
+    caller_arn = sts.get_caller_identity()["Arn"]
+    # Resolve full role ARN via IAM — assumed-role ARNs strip the
+    # IAM path (e.g. SSO's aws-reserved/sso.amazonaws.com/<region>/)
+    # so reconstructing from the ARN string gives an invalid principal.
+    if ":assumed-role/" in caller_arn:
+        role_name = caller_arn.split(":")[5].split("/")[1]
+        iam = boto3_session.client("iam", region_name=aws_region)
+        caller_role_arn = iam.get_role(RoleName=role_name)["Role"]["Arn"]
+    else:
+        caller_role_arn = caller_arn
+
+    _write_tfvars(
+        terraform_dir,
+        aws_region,
+        test_role_arn,
+        "state-manager-wildcard",
+        assuming_role_arns=[caller_role_arn],
+        assuming_role_patterns=[probe_role_pattern],
     )
 
     with terraform_apply(

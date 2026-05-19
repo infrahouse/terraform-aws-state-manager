@@ -19,6 +19,7 @@ The role provides secure, controlled access to state resources while supporting 
 
 - Creates IAM role with configurable assume role policies
 - Supports both read-only and read-write permissions for state management
+- Wildcard principal matching via `assuming_role_patterns` (useful for AWS SSO roles)
 - Automatic role name truncation to meet AWS 64-character limit
 - DynamoDB integration for state locking
 - Configurable session duration
@@ -62,6 +63,27 @@ module "state_manager" {
   terraform_locks_table_arn = var.terraform_locks_table_arn
   max_session_duration      = 3600  # 1 hour
   read_only_permissions     = false
+}
+```
+
+### SSO Role Access with Wildcard Patterns
+```hcl
+module "state_manager" {
+  source  = "infrahouse/state-manager/aws"
+  version = "1.4.2"
+
+  name                      = "my-terraform-state-manager"
+  environment               = var.environment
+  state_bucket              = "my-terraform-state-bucket"
+  terraform_locks_table_arn = "arn:aws:dynamodb:us-west-2:123456789012:table/terraform-locks"
+
+  assuming_role_arns = [
+    "arn:aws:iam::123456789012:role/github-actions-role"
+  ]
+
+  assuming_role_patterns = [
+    "arn:aws:iam::123456789012:role/aws-reserved/sso.amazonaws.com/*/AWSReservedSSO_AdministratorAccess_*"
+  ]
 }
 ```
 

@@ -48,7 +48,8 @@ test-keep: ## Run a test and keep resources
 		--test-role-arn=${TEST_ROLE} \
 		--keep-after \
 		$(if ${TEST_FILTER},-k "${TEST_FILTER}") \
-		tests/test_module.py
+		tests/test_module.py \
+		2>&1 | tee pytest-`date +%Y%m%d-%H%M%S`-output.log
 
 .PHONY: test-clean
 test-clean: ## Run a test and destroy resources
@@ -56,7 +57,8 @@ test-clean: ## Run a test and destroy resources
 		--aws-region=${TEST_REGION} \
 		--test-role-arn=${TEST_ROLE} \
 		$(if ${TEST_FILTER},-k "${TEST_FILTER}") \
-		tests/test_module.py
+		tests/test_module.py \
+		2>&1 | tee pytest-`date +%Y%m%d-%H%M%S`-output.log
 
 .PHONY: bootstrap
 bootstrap: install-hooks ## bootstrap the development environment

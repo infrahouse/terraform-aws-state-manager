@@ -1,12 +1,9 @@
-data "aws_caller_identity" "current" {}
-
 locals {
-  bucket_name = "${substr(var.name, 0, 40)}-${data.aws_caller_identity.current.account_id}"
-  table_name  = "${substr(var.name, 0, 40)}-locks"
+  table_name = "${substr(var.name, 0, 40)}-locks"
 }
 
 resource "aws_s3_bucket" "state" {
-  bucket        = local.bucket_name
+  bucket_prefix = "${substr(var.name, 0, 36)}-"
   force_destroy = true
 }
 
@@ -26,6 +23,7 @@ module "test" {
 
   environment               = var.environment
   assuming_role_arns        = var.assuming_role_arns
+  assuming_role_patterns    = var.assuming_role_patterns
   max_session_duration      = var.max_session_duration
   name                      = var.name
   read_only_permissions     = var.read_only_permissions

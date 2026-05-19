@@ -13,6 +13,12 @@ variable "assuming_role_arns" {
   type        = list(string)
 }
 
+variable "assuming_role_patterns" {
+  description = "ARN patterns with wildcards for roles allowed to assume this role"
+  type        = list(string)
+  default     = []
+}
+
 variable "max_session_duration" {
   description = "Maximum session duration (in seconds)"
   type        = number

@@ -13,6 +13,8 @@ resources with support for both read-only and read-write permission modes.
 - **Read-Only Mode** - Grant `terraform_remote_state` access without write or lock
   permissions
 - **Read-Write Mode** - Full state management with S3 put/delete and DynamoDB locking
+- **Wildcard Principal Matching** - Support for `assuming_role_patterns` with
+  `StringLike` conditions, useful for AWS SSO roles with auto-generated suffixes
 - **Automatic Name Truncation** - Role names exceeding 64 characters are automatically
   truncated to meet the AWS limit
 - **Configurable Session Duration** - Control how long assumed sessions last
