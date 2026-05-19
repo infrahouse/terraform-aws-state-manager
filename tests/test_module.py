@@ -401,12 +401,13 @@ def test_module_wildcard(
 
     sts = boto3_session.client("sts", region_name=aws_region)
     caller_arn = sts.get_caller_identity()["Arn"]
-    # Convert assumed-role ARN to role ARN for the trust policy
+    # Resolve full role ARN via IAM — assumed-role ARNs strip the
+    # IAM path (e.g. SSO's aws-reserved/sso.amazonaws.com/<region>/)
+    # so reconstructing from the ARN string gives an invalid principal.
     if ":assumed-role/" in caller_arn:
-        parts = caller_arn.split(":")
-        account_id = parts[4]
-        role_name = parts[5].split("/")[1]
-        caller_role_arn = f"arn:aws:iam::{account_id}:role/{role_name}"
+        role_name = caller_arn.split(":")[5].split("/")[1]
+        iam = boto3_session.client("iam", region_name=aws_region)
+        caller_role_arn = iam.get_role(RoleName=role_name)["Role"]["Arn"]
     else:
         caller_role_arn = caller_arn
 
