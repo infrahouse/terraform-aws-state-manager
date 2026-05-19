@@ -1,12 +1,9 @@
-data "aws_caller_identity" "current" {}
-
 locals {
-  bucket_name = "${substr(var.name, 0, 40)}-${data.aws_caller_identity.current.account_id}"
-  table_name  = "${substr(var.name, 0, 40)}-locks"
+  table_name = "${substr(var.name, 0, 40)}-locks"
 }
 
 resource "aws_s3_bucket" "state" {
-  bucket        = local.bucket_name
+  bucket_prefix = "${substr(var.name, 0, 37)}-"
   force_destroy = true
 }
 
