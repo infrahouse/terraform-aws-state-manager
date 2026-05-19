@@ -3,7 +3,7 @@ locals {
 }
 
 resource "aws_s3_bucket" "state" {
-  bucket_prefix = "${substr(var.name, 0, 37)}-"
+  bucket_prefix = "${substr(var.name, 0, 36)}-"
   force_destroy = true
 }
 
