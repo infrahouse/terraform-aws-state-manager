@@ -140,6 +140,7 @@ No modules.
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
 | <a name="input_assuming_role_arns"></a> [assuming\_role\_arns](#input\_assuming\_role\_arns) | Roles that are allowed to assume this role. For example, a GitHub Actions<br/>worker has a role. The GHA role needs to be able to assume the state-manager role. | `list(string)` | n/a | yes |
+| <a name="input_assuming_role_patterns"></a> [assuming\_role\_patterns](#input\_assuming\_role\_patterns) | ARN patterns (with wildcards) for roles allowed to assume this role.<br/>Uses StringLike condition on aws:PrincipalArn instead of exact matching.<br/>Useful for AWS SSO roles with auto-generated suffixes.<br/>Each pattern must include an explicit 12-digit AWS account ID.<br/>Example: ["arn:aws:iam::123456789012:role/aws-reserved/sso.amazonaws.com/*/AWSReservedSSO\_AdministratorAccess\_*"] | `list(string)` | `[]` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment name (e.g., development, staging, production). | `string` | n/a | yes |
 | <a name="input_max_session_duration"></a> [max\_session\_duration](#input\_max\_session\_duration) | Maximum session duration (in seconds) that you want to set for the specified role. | `number` | `43200` | no |
 | <a name="input_name"></a> [name](#input\_name) | Role name | `string` | n/a | yes |
