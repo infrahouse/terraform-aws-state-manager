@@ -31,7 +31,7 @@ The role provides secure, controlled access to state resources while supporting 
 ```hcl
 module "state_manager" {
   source  = "infrahouse/state-manager/aws"
-  version = "1.4.2"
+  version = "1.5.0"
 
   name                      = "my-terraform-state-manager"
   state_bucket              = "my-terraform-state-bucket"
@@ -47,7 +47,7 @@ module "state_manager" {
 ```hcl
 module "state_manager" {
   source  = "infrahouse/state-manager/aws"
-  version = "1.4.2"
+  version = "1.5.0"
 
   name = "ih-tf-${var.repo_name}-state-manager"
 
@@ -70,7 +70,7 @@ module "state_manager" {
 ```hcl
 module "state_manager" {
   source  = "infrahouse/state-manager/aws"
-  version = "1.4.2"
+  version = "1.5.0"
 
   name                      = "my-terraform-state-manager"
   environment               = var.environment
@@ -91,7 +91,7 @@ module "state_manager" {
 ```hcl
 module "state_reader" {
   source  = "infrahouse/state-manager/aws"
-  version = "1.4.2"
+  version = "1.5.0"
 
   name                      = "terraform-state-reader"
   state_bucket              = "my-terraform-state-bucket" 
