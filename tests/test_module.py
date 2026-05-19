@@ -234,7 +234,7 @@ def _verify_permissions(
     # Retry for IAM policy propagation — any action can fail until
     # all policy attachments have propagated.
     sleep_time = 2
-    with timeout(seconds=60):
+    with timeout(seconds=120):
         while True:
             try:
                 if not read_only:
